@@ -1,0 +1,72 @@
+MONTE CARLO FINANCE SIMULATOR - PROJECT NOTES
+==============================================
+
+Purpose
+-------
+Demonstrate how Monte Carlo simulation can price a European call option and
+estimate market risk for a weighted stock portfolio. The project is intended
+as an educational bridge from NumPy programming to quantitative finance.
+
+Files
+-----
+mc.py            Simulation functions, option pricing, risk analysis, charts,
+                 and command-line entry point.
+test_mc.py       Deterministic unit tests for simulation and risk calculations.
+requirements.txt Runtime package versions.
+README.md        Setup, run commands, and model limitations.
+output/          Generated charts (created when a demo runs).
+
+Environment
+-----------
+Use Python 3.11 or newer. Create a local environment with:
+
+    py -3 -m venv .venv
+    .venv\Scripts\Activate.ps1
+    python -m pip install -r requirements.txt
+
+The --risk mode downloads adjusted prices through yfinance and requires network
+access. Select `--market us` (default) for U.S. symbols or `--market au` for
+Australian Securities Exchange symbols ending in .AX. The two portfolios are
+reported separately in USD and AUD; mixed-market FX conversion is not modeled.
+The option pricing demo and automated tests do not require market data.
+
+Models and equations
+--------------------
+GBM time steps are simulated as:
+
+    S(t+dt) = S(t) * exp((mu - sigma^2 / 2) * dt + sigma * sqrt(dt) * Z)
+
+where Z is a standard normal shock. Call pricing uses risk-neutral drift r and
+discounts the average terminal payoff max(S(T) - K, 0) by exp(-rT). An analytic
+Black-Scholes price is used as a benchmark. Antithetic estimates average paired
+payoffs generated from Z and -Z.
+
+Portfolio P&L is terminal value minus initial value. At confidence c, VaR is
+the negative (1-c) P&L quantile; ES is the negative average P&L in that tail.
+The risk workflow reports both a fitted portfolio-level GBM and a correlated
+asset-level simulation based on historical daily log returns.
+
+Reproducibility and outputs
+---------------------------
+Random generators use explicit seeds. Running `python mc.py` creates
+output/paths.png and output/convergence.png. Running `python mc.py --risk`
+creates output/risk_dashboard_us.png and prints U.S. dollar portfolio risk
+estimates. Running `python mc.py --risk --market au` creates
+output/risk_dashboard_au.png and prints Australian dollar estimates.
+Run checks with `python -m unittest -v`.
+
+Assumptions and limitations
+---------------------------
+GBM assumes stable drift and volatility and normally distributed log returns.
+Historical estimates are backward-looking. Actual markets can exhibit fat
+tails, volatility clustering, liquidity gaps, and jumps. Yahoo Finance data
+availability and adjusted-price history can change. VaR and ES are model
+estimates, not guarantees or investment advice.
+
+Possible extensions
+-------------------
+- Compare confidence intervals and standard errors across repeated runs.
+- Add bootstrap or Student-t shocks for heavier tails.
+- Add volatility clustering with a GARCH process.
+- Load user-selected tickers and weights from command-line options or a config.
+- Compare historical simulation with parametric VaR/ES.
